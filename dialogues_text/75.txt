@@ -1,0 +1,4 @@
+Cathy|"So, Alice, have you ever tried stand-up comedy? I think it would be hilarious!"
+Alice|"Oh, wow, Cathy! I've always wanted to try it out! But I'm a bit too shy to get up in front of a crowd."
+Cathy|"Nonsense, Alice! You're so brave and adventurous. I'm sure you would be great at it!"
+Alice|"Thanks, Cathy. Maybe one day I'll muster up the courage to give it a try."
