@@ -37,8 +37,6 @@ persona_dict = {persona.name: persona for persona in personas}
 
 json_directory = './dialogues'
 output_directory = './raw'
-#json_directory = './test'
-#output_directory = './test'
 print("Starting to generate audio...")
 
 # Iterate through each JSON file in the directory
@@ -64,7 +62,7 @@ for json_file in os.listdir(json_directory):
             input_ids = tokenizer(description, return_tensors="pt").input_ids.to(device)
             
             # Join all dialogues into one prompt
-            full_prompt = "--".join(dialogues)
+            full_prompt = " ".join(dialogues)
             prompt_input_ids = tokenizer(full_prompt, return_tensors="pt").input_ids.to(device)
             
             generation = model.generate(input_ids=input_ids, prompt_input_ids=prompt_input_ids, max_new_tokens=4000)
@@ -72,7 +70,5 @@ for json_file in os.listdir(json_directory):
             
             output_file_path = os.path.join(json_output_directory, f"{name}.wav")
             sf.write(output_file_path, audio_arr, model.config.sampling_rate)
-    if file_counter >= 1:
-         break
 print("Audio generation completed.")
 print(f"Total folder generated : {file_counter}")
