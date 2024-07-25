@@ -3,7 +3,7 @@ from pydub import AudioSegment
 import os
 
 def transcribe_audio(audio_path):
-    model = whisper.load_model("base")  # Choose model size as needed
+    model = whisper.load_model("base")  # Choose the model size as needed
     result = model.transcribe(audio_path, word_timestamps=True)
     return result['segments']
 
@@ -30,7 +30,7 @@ def load_transcript(file_path):
     return transcript
 
 def match_transcript_with_segments(transcript, segments):
-    # Create a mapping from dialogue to segment index (if needed)
+    # Create a mapping from dialogue to segment index
     transcript_mapping = []
     for entry in transcript:
         for segment in segments:
