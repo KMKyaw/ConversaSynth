@@ -113,6 +113,7 @@ def remove_empty_json_files(folder_path):
 
 # Function to clean JSON files and remove unwanted files
 def clean_and_filter_json_files(folder_path, personas_list):
+    personas_list = [name.__name__ if isinstance(name, type) else str(name) for name in personas_list]
     for filename in os.listdir(folder_path):
         if filename.endswith('.json'):
             file_path = os.path.join(folder_path, filename)
@@ -125,11 +126,15 @@ def clean_and_filter_json_files(folder_path, personas_list):
             
             # Filter out lines where dialogue is empty and check for valid personas
             cleaned_lines = []
+            print('personas list:')
+            print(personas_list)
             for line in lines:
+                print(line)
                 try:
                     json_obj = json.loads(line)
                     if json_obj.get("name") in personas_list:
                         valid_persona_found = True
+                        print(f"found")
                         if json_obj.get("dialogue"):
                             cleaned_lines.append(line)
                 except json.JSONDecodeError:
@@ -147,13 +152,13 @@ def clean_and_filter_json_files(folder_path, personas_list):
 
 def remove_bounded_words(text):
     # Pattern to match text within *, (), [], {}
-    pattern = r'[\*\(\[\{][^*\(\[\{\]\}\)]*[\*\)\]\}]'
+    pattern = r'\\u[0-9a-fA-F]{4}'
     return re.sub(pattern, '', text).strip()
 
 def generate_unique_voices(selected_personas):
     file_counter = 0
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
-
+ 
     model = ParlerTTSForConditionalGeneration.from_pretrained("parler-tts/parler_tts_mini_v0.1").to(device)
     tokenizer = AutoTokenizer.from_pretrained("parler-tts/parler_tts_mini_v0.1")
 
@@ -164,8 +169,7 @@ def generate_unique_voices(selected_personas):
     os.makedirs(output_directory, exist_ok=True)
     # print("Starting to generate audio...")
 
-    full_prompt = "That was the prospect a week ago. But another blow which might well have proved final was yet to fall upon us. The King of the Belgians had called upon us to come to his aid. Had not this Ruler and his Government severed themselves from the Allies, who rescued their country from extinction in the late war, and had they not sought refuge in what was proved to be a fatal neutrality, the French and British Armies might well at the outset have saved not only Belgium but perhaps even Poland. Yet at the last moment, when Belgium was already invaded, King Leopold called upon us to come to his aid, and even at the last moment we came. He and his brave, efficient Army, nearly half a million strong, guarded our left flank and thus kept open our only line of retreat to the sea. Suddenly, without prior consultation, with the least possible notice, without the advice of his Ministers and upon his own personal act, he sent a plenipotentiary to the German Command, surrendered his Army, and exposed our whole flank and means of retreat."
-
+    full_prompt = "Exploring the wonders of the natural world can be an incredibly enriching experience. From the vast, serene landscapes of national parks to the intricate details of a single leaf, nature offers an endless array of beauty and complexity. Observing wildlife in their natural habitats reveals fascinating behaviors and interactions that are often hidden from view. Each ecosystem, whether it’s a bustling coral reef or a quiet forest, plays a crucial role in maintaining the delicate balance of our planet. Understanding and appreciating these natural processes can inspire us to protect and preserve the environment for future generations. By fostering a deeper connection with nature, we not only enhance our own well-being but also contribute to the health of the Earth as a whole."
     # Iterate through each persona
     for persona_name, persona in persona_dict.items():
         file_counter += 1
@@ -234,7 +238,7 @@ def generate_dialogue_audio(dialogue_folder, raw_folder, output_folder):
                 # Increment the overall counter
                 overall_counter += 1
 
-def concatenate_audios(main_directory):
+def concatenate_audios(main_directory, output_directory):
     for subdir in os.listdir(main_directory):
         subdir_path = os.path.join(main_directory, subdir)
         if os.path.isdir(subdir_path):
@@ -325,12 +329,10 @@ def main():
         raise ValueError("Error: The value of min must be at least 2. (The default is 2)")
     if args.n < 1:
         raise ValueError("Error: The value of n must be at least 1. (The default is 1)")
-    if args.min > max:
+    if args.min > args.max:
         raise ValueError("Error: The argument max must be always greater than min.")
-       # Randomly pick a number between 2 and 5
     num_personas = random.randint(args.min, args.max)
 
-    # Randomly select the chosen number of personas from the list
     selected_personas = random.sample(personas, num_personas)
     start_time = time.time()
     for i in tqdm(range(1, args.n + 1), desc="Generating Text Dialogues"):
@@ -352,10 +354,10 @@ def main():
     os.makedirs('./dialogue_audios', exist_ok=True)
     generate_dialogue_audio('./dialogues', './unique_voices', './dialogue_audios')
     end_time = time.time()
-    total_time = end_time - start_time
+    itotal_time = end_time - start_time
     print("Generating Dialogue Audios : DONE")
     print(f"Total time taken for generating dialogue audios : {total_time:.2f} seconds")
-    concatenate_audios('./dialogue_audios')
+    concatenate_audios('./dialogue_audios', args.o)
     annotate_data('./dialogue_audios')
     df = pd.read_csv('annotations.csv')
     df['filename'] = df['filename'].apply(clean_filename)
