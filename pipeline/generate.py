@@ -11,34 +11,13 @@ import torch
 from parler_tts import ParlerTTSForConditionalGeneration
 from transformers import AutoTokenizer
 import soundfile as sf
-import re
-from personas import personas  # Importing the personas
 from datasets import load_dataset  # Importing the datasets module from Hugging Face
 from tqdm import tqdm
 from TTS.api import TTS
 from pydub import AudioSegment
 import pandas as pd
 import soundfile as sf
-
-def validate_min(value):
-    try:
-        ivalue = int(value)
-        if ivalue < 2:
-            raise argparse.ArgumentTypeError(f"Invalid value for --min: {value}. Must be an integer greater than or equal to 2.")
-        return ivalue
-    except ValueError:
-        raise argparse.ArgumentTypeError(f"Invalid value for --min: {value}. Must be an integer.")
-
-def validate_max(value):
-    try:
-        ivalue = int(value)
-        # Check if --max is within the range of the number of personas
-        if ivalue > len(personas):
-            raise argparse.ArgumentTypeError(f"Invalid value for --max: {value}. Must be an integer less than or equal to {len(personas)}.")
-        return ivalue
-    except ValueError:
-        raise argparse.ArgumentTypeError(f"Invalid value for --max: {value}. Must be an integer.")
-
+from tqdm import tqdm
 
 def extract_conversation(text):
     start_token = "[CONV_BEGIN]"
@@ -67,17 +46,11 @@ def extract_conversation_to_jsonl(conversation):
     return dialogue_list
 
 # Function to generate and save conversation
-def generate_and_save_conversation(file_number, folder, min_amt, max_amt):
+def generate_and_save_conversation(file_number, folder, selected_personas):
     llm = Ollama(model='llama3')
     # Ensure the folder exists
     if not os.path.exists(folder):
         os.makedirs(folder)
-
-    # Randomly pick a number between 2 and 5
-    num_personas = random.randint(min_amt, max_amt)
-
-    # Randomly select the chosen number of personas from the list
-    selected_personas = random.sample(personas, num_personas)
 
     # Construct the prompt
     prompt = ""
@@ -119,7 +92,7 @@ IMPORTANT : MAKE SURE THAT EVERYONE PARTICIPATES IN THE CONVERSATION
         for line in jsonl_conversation:
             file.write(line + "\n")
 
-    print(f"Conversation saved to {filename}")
+    # print(f"Conversation saved to {filename}")
 
 def remove_empty_json_files(folder_path):
     # Get a list of all files in the folder
@@ -177,7 +150,7 @@ def remove_bounded_words(text):
     pattern = r'[\*\(\[\{][^*\(\[\{\]\}\)]*[\*\)\]\}]'
     return re.sub(pattern, '', text).strip()
 
-def generate_unique_voices():
+def generate_unique_voices(selected_personas):
     file_counter = 0
     device = "cuda:0" if torch.cuda.is_available() else "cpu"
 
@@ -185,18 +158,18 @@ def generate_unique_voices():
     tokenizer = AutoTokenizer.from_pretrained("parler-tts/parler_tts_mini_v0.1")
 
     # Convert personas list to a dictionary for easy access
-    persona_dict = {persona.name: persona for persona in personas}
+    persona_dict = {persona.name: persona for persona in selected_personas}
 
     output_directory = './unique_voices'
     os.makedirs(output_directory, exist_ok=True)
-    print("Starting to generate audio...")
+    # print("Starting to generate audio...")
 
     full_prompt = "That was the prospect a week ago. But another blow which might well have proved final was yet to fall upon us. The King of the Belgians had called upon us to come to his aid. Had not this Ruler and his Government severed themselves from the Allies, who rescued their country from extinction in the late war, and had they not sought refuge in what was proved to be a fatal neutrality, the French and British Armies might well at the outset have saved not only Belgium but perhaps even Poland. Yet at the last moment, when Belgium was already invaded, King Leopold called upon us to come to his aid, and even at the last moment we came. He and his brave, efficient Army, nearly half a million strong, guarded our left flank and thus kept open our only line of retreat to the sea. Suddenly, without prior consultation, with the least possible notice, without the advice of his Ministers and upon his own personal act, he sent a plenipotentiary to the German Command, surrendered his Army, and exposed our whole flank and means of retreat."
 
     # Iterate through each persona
     for persona_name, persona in persona_dict.items():
         file_counter += 1
-        print(f"#### Currently processing {persona_name} ####")
+        #print(f"#### Currently processing {persona_name} ####")
         
         # Retrieve the style from the persona
         description = persona.style if persona_name in persona_dict else "Default style if name not found"
@@ -291,8 +264,6 @@ def concatenate_audios(main_directory):
             output_path = os.path.join(output_directory, f'{subdir}.wav')
             combined_audio.export(output_path, format='wav')
 
-            print(f"Combined audio for {subdir} saved to {output_path}")
-
 def annotate_data(dialogues_path):
     # List to store annotation data
     annotations = []
@@ -347,29 +318,43 @@ def main():
     parser = argparse.ArgumentParser(description="Generate conversations.")
     parser.add_argument("--n", type=int, default=1, help="Number of conversations to generate")
     parser.add_argument("--o", type=str, default="conversations", help="Folder to save the conversations")
-    parser.add_argument("--min", type=validate_min, default=2, help="Minimum number of personas participating in the conversation")
-    parser.add_argument("--max", type=validate_max, help="Maximum number of personas participating in the conversation")
+    parser.add_argument("--min", type=int, default=2, help="Minimum number of personas participating in the conversation")
+    parser.add_argument("--max", type=int, help="Maximum number of personas participating in the conversation")
     args = parser.parse_args()
+    if args.min < 2:
+        raise ValueError("Error: The value of min must be at least 2. (The default is 2)")
+    if args.n < 1:
+        raise ValueError("Error: The value of n must be at least 1. (The default is 1)")
+    if args.min > max:
+        raise ValueError("Error: The argument max must be always greater than min.")
+       # Randomly pick a number between 2 and 5
+    num_personas = random.randint(args.min, args.max)
+
+    # Randomly select the chosen number of personas from the list
+    selected_personas = random.sample(personas, num_personas)
     start_time = time.time()
-    for i in range(1, args.n + 1):
-        generate_and_save_conversation(i, './dialogues',args.min, args.max)
+    for i in tqdm(range(1, args.n + 1), desc="Generating Text Dialogues"):
+        generate_and_save_conversation(i, './dialogues', selected_personas)
     end_time = time.time()
     total_time = end_time - start_time
-    print("Dialogue generation : DONE")
+    print("Generating Text Dialogues : DONE")
     print(f"Total time taken for generating dialogues: {total_time:.2f} seconds")
+    print("Cleaning Json files...")
     remove_empty_json_files('./dialogues')
     clean_and_filter_json_files('./dialogues', personas)
     print("Cleaning Json files : DONE")
-    generate_unique_voices()
+    print("Generating Unique voices...")
+    generate_unique_voices(selected_personas)
     print("Generating Unique voices : DONE")
     os.makedirs(args.o, exist_ok=True)
+    print("Generating Dialogue Audios...")
     start_time = time.time()
     os.makedirs('./dialogue_audios', exist_ok=True)
     generate_dialogue_audio('./dialogues', './unique_voices', './dialogue_audios')
     end_time = time.time()
     total_time = end_time - start_time
-    print("Audio dialogue generation : DONE")
-    print(f"Total time taken for audio dialogue generation : {total_time:.2f} seconds")
+    print("Generating Dialogue Audios : DONE")
+    print(f"Total time taken for generating dialogue audios : {total_time:.2f} seconds")
     concatenate_audios('./dialogue_audios')
     annotate_data('./dialogue_audios')
     df = pd.read_csv('annotations.csv')
