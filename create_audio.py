@@ -35,8 +35,8 @@ tokenizer = AutoTokenizer.from_pretrained("parler-tts/parler_tts_mini_v0.1")
 # Convert personas list to a dictionary for easy access
 persona_dict = {persona.name: persona for persona in personas}
 
-json_directory = './dialogues'
-output_directory = './raw'
+json_directory = './llama3/output'
+output_directory = './llama3/audio'
 print("Starting to generate audio...")
 
 # Iterate through each JSON file in the directory

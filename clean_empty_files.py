@@ -18,4 +18,4 @@ def remove_empty_json_files(folder_path):
                     print(f"Removed empty JSON file: {file_path}")
 
 # Replace 'your_folder_path' with the path to your folder
-remove_empty_json_files('./dialogues')
+remove_empty_json_files('./comparison/llama3')

@@ -15,12 +15,21 @@ tts = TTS("tts_models/multilingual/multi-dataset/xtts_v2").to(device)
 dataset = load_dataset("roneneldan/TinyStories")
 
 # Extract up to 50 rows from the text column and concatenate them
-texts = dataset['train']['text'][:200]
+texts = dataset['train']['text'][:40]
 combined_text = " ".join(texts)
 
-# Limit to 3000 characters
-max_characters = 300000
+# Limit characters
+max_characters = 200000
 text = combined_text[:max_characters]
 
+print("Starting to generate audio...")
 # Run TTS
-tts.tts_to_file(text=text, speaker_wav="../raw/41/David.wav", language="en", file_path="David.wav")
+#tts.tts_to_file(text=text, speaker_wav="../voices/David.wav", language="en", file_path="extended/David_train.wav")
+#tts.tts_to_file(text=text, speaker_wav="../voices/Alice.wav", language="en", file_path="extended/Alice_train.wav")
+#tts.tts_to_file(text=text, speaker_wav="../voices/Ben.wav", language="en", file_path="extended/Ben_train.wav")
+#tts.tts_to_file(text=text, speaker_wav="../voices/Cathy.wav", language="en", file_path="extended/Cathy_train.wav")
+#tts.tts_to_file(text=text, speaker_wav="../voices/Eva.wav", language="en", file_path="extended/Eva_train.wav")
+#tts.tts_to_file(text=text, speaker_wav="../voices/Frank.wav", language="en", file_path="extended/Frank_train.wav")
+tts.tts_to_file(text=text, speaker_wav="../voices/Grace.wav", language="en", file_path="extended/Grace_train.wav")
+#tts.tts_to_file(text=text, speaker_wav="../voices/Henry.wav", language="en", file_path="extended/Henry_train.wav")
+#tts.tts_to_file(text=text, speaker_wav="../voices/Isabella.wav", language="en", file_path="extended/Isabella_train.wav")

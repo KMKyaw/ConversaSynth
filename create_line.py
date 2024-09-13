@@ -3,6 +3,12 @@ import os
 from tqdm import tqdm
 import torch
 from TTS.api import TTS
+import re
+import time
+def remove_bounded_words(text):
+    # Pattern to match text within *, (), [], {}
+    pattern = r'[\*\(\[\{][^*\(\[\{\]\}\)]*[\*\)\]\}]'
+    return re.sub(pattern, '', text).strip()
 
 # Function to process the JSON file and generate audio for each dialogue
 def generate_dialogue_audio(dialogue_folder, raw_folder, output_folder):
@@ -31,9 +37,9 @@ def generate_dialogue_audio(dialogue_folder, raw_folder, output_folder):
             for dialogue in tqdm(dialogues, desc=f"Processing {json_filename}"):
                 name = dialogue['name']
                 text = dialogue['dialogue']
-                
+                text = remove_bounded_words(text)
                 # Construct the path to the speaker's audio file
-                speaker_wav = os.path.join(raw_folder, dialogue_index, f"{name}.wav")
+                speaker_wav = os.path.join(raw_folder, f"{name}.wav")
                 
                 # Ensure the speaker's audio file exists
                 if not os.path.exists(speaker_wav):
@@ -46,20 +52,29 @@ def generate_dialogue_audio(dialogue_folder, raw_folder, output_folder):
                 
                 # Ensure the output directory exists
                 os.makedirs(output_wav_folder, exist_ok=True)
-                
+                print(text)
+                print(speaker_wav)
                 # Generate TTS audio
                 tts.tts_to_file(text=text, speaker_wav=speaker_wav, language="en", file_path=output_wav)
                 
                 # Increment the overall counter
                 overall_counter += 1
 
+start_time = time.time()
 # Define paths
-dialogue_folder = './dialogues'  # Folder containing the JSON files
-raw_folder = './raw'  # Folder containing the .wav files for each speaker
-output_folder = './output'  # Folder to save the generated audio files
+dialogue_folder = './comparison/llama3'  # Folder containing the JSON files
+raw_folder = './voices'  # Folder containing the .wav files for each speaker
+output_folder = './llama3/output'  # Folder to save the generated audio files
 
 # Create the output folder if it doesn't exist
 os.makedirs(output_folder, exist_ok=True)
 
 # Generate audio for each dialogue
 generate_dialogue_audio(dialogue_folder, raw_folder, output_folder)
+# Record the end time
+end_time = time.time()
+
+# Calculate the duration
+execution_time = end_time - start_time
+
+print(f"Execution time: {execution_time} seconds")
